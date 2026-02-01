@@ -1,0 +1,1402 @@
+
+{
+    "version": "Notebook/1.0",
+    "items": [
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); color: white; margin-bottom: 15px;'>\n\n# 💻 Azure Virtual Desktop 访问监控\n\n<div style='font-size: 14px; opacity: 0.95; margin-top: 8px;'>\n全面监控 AVD 访问行为、安全态势、用户活动和设备合规性\n</div>\n\n</div>"
+            },
+            "name": "title",
+            "id": "161f8ed6-9fa0-4a6e-92cd-ee3d94d46de7"
+        },
+        {
+            "type": 9,
+            "content": {
+                "version": "KqlParameterItem/1.0",
+                "parameters": [
+                    {
+                        "id": "timeRange",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "TimeRange",
+                        "label": "时间范围",
+                        "type": 4,
+                        "isRequired": true,
+                        "value": {
+                            "durationMs": 2592000000
+                        },
+                        "typeSettings": {
+                            "selectableValues": [
+                                {
+                                    "durationMs": 300000
+                                },
+                                {
+                                    "durationMs": 900000
+                                },
+                                {
+                                    "durationMs": 1800000
+                                },
+                                {
+                                    "durationMs": 3600000
+                                },
+                                {
+                                    "durationMs": 14400000
+                                },
+                                {
+                                    "durationMs": 43200000
+                                },
+                                {
+                                    "durationMs": 86400000
+                                },
+                                {
+                                    "durationMs": 172800000
+                                },
+                                {
+                                    "durationMs": 259200000
+                                },
+                                {
+                                    "durationMs": 604800000
+                                },
+                                {
+                                    "durationMs": 1209600000
+                                },
+                                {
+                                    "durationMs": 2419200000
+                                },
+                                {
+                                    "durationMs": 2592000000
+                                },
+                                {
+                                    "durationMs": 5184000000
+                                },
+                                {
+                                    "durationMs": 7776000000
+                                }
+                            ],
+                            "allowCustom": true
+                        }
+                    },
+                    {
+                        "id": "workspace",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "Workspace",
+                        "label": "工作区",
+                        "type": 5,
+                        "isRequired": true,
+                        "query": "resources\n| where type == 'microsoft.operationalinsights/workspaces'\n| project id, name\n| sort by name asc",
+                        "crossComponentResources": [
+                            "value::all"
+                        ],
+                        "value": "/subscriptions/39c4d6ba-bd22-45fa-abbc-bd025e035ae5/resourceGroups/Sentinel/providers/Microsoft.OperationalInsights/workspaces/Sentinel",
+                        "typeSettings": {
+                            "resourceTypeFilter": {
+                                "microsoft.operationalinsights/workspaces": true
+                            },
+                            "additionalResourceOptions": [
+                                "value::1"
+                            ],
+                            "showDefault": false
+                        },
+                        "timeContext": {
+                            "durationMs": 0
+                        },
+                        "queryType": 1,
+                        "resourceType": "microsoft.resourcegraph/resources"
+                    },
+                    {
+                        "id": "department",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "Department",
+                        "label": "部门筛选",
+                        "type": 2,
+                        "isRequired": false,
+                        "multiSelect": true,
+                        "quote": "'",
+                        "delimiter": ",",
+                        "query": "SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| extend DeptFromEmail = split(UserPrincipalName, \"@\")[0]\n| extend Department = case(\n    DeptFromEmail contains \"hr\" or DeptFromEmail contains \"人力\", \"人力资源部\",\n    DeptFromEmail contains \"it\" or DeptFromEmail contains \"tech\", \"IT部\",\n    DeptFromEmail contains \"sales\" or DeptFromEmail contains \"销售\", \"销售部\",\n    DeptFromEmail contains \"finance\" or DeptFromEmail contains \"财务\", \"财务部\",\n    DeptFromEmail contains \"marketing\" or DeptFromEmail contains \"市场\", \"市场部\",\n    DeptFromEmail contains \"ops\" or DeptFromEmail contains \"运营\", \"运营部\",\n    \"其他部门\"\n)\n| distinct Department\n| order by Department asc",
+                        "crossComponentResources": [
+                            "{Workspace}"
+                        ],
+                        "value": [
+                            "value::all"
+                        ],
+                        "typeSettings": {
+                            "additionalResourceOptions": [
+                                "value::all"
+                            ],
+                            "showDefault": false
+                        },
+                        "timeContext": {
+                            "durationMs": 0
+                        },
+                        "timeContextFromParameter": "TimeRange",
+                        "queryType": 0,
+                        "resourceType": "microsoft.operationalinsights/workspaces"
+                    }
+                ],
+                "style": "pills"
+            },
+            "name": "parameters",
+            "id": "8baedce7-11bb-4ac9-9beb-3c5ab067cda2"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background: linear-gradient(135deg, #e8f4f8 0%, #d4e9f7 100%); padding: 20px; border-left: 5px solid #0078d4; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,120,212,0.1);'>\n\n## 📊 关键指标仪表盘\n\n实时监控 AVD 环境的核心性能指标和健康状态\n\n</div>"
+            },
+            "name": "text - metrics header",
+            "id": "7aa333fb-00f5-49c7-b5f4-83e6b42136da"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| summarize \n    TotalConnections = count(),\n    UniqueUsers = dcount(UserPrincipalName),\n    SuccessfulConnections = countif(ResultType == 0),\n    FailedConnections = countif(ResultType != 0)\n| extend SuccessRate = round(SuccessfulConnections * 100.0 / TotalConnections, 2)\n| project TotalConnections, UniqueUsers, SuccessRate, FailedConnections",
+                "size": 3,
+                "title": "📊 访问统计",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "tiles",
+                "tileSettings": {
+                    "showBorder": false
+                }
+            },
+            "customWidth": "50",
+            "name": "query - overview metrics",
+            "id": "94cf391e-4e4a-4a79-9448-88b6620adcda"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SecurityAlert\n| where ProviderName contains \"AVD\" or ProviderName contains \"Virtual Desktop\" or AlertName contains \"Remote Desktop\"\n| summarize \n    TotalAlerts = count(),\n    HighSeverity = countif(AlertSeverity == \"High\"),\n    MediumSeverity = countif(AlertSeverity == \"Medium\"),\n    LowSeverity = countif(AlertSeverity == \"Low\")\n| extend RiskScore = (HighSeverity * 10 + MediumSeverity * 5 + LowSeverity * 1)\n| project RiskScore, TotalAlerts, HighSeverity, MediumSeverity",
+                "size": 3,
+                "title": "🔒 安全风险",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "tiles",
+                "tileSettings": {
+                    "showBorder": false
+                }
+            },
+            "customWidth": "50",
+            "name": "query - security metrics",
+            "id": "1cff3242-2915-4fc5-b51f-83ef1c2ee227"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background-color: #f0f9ff; padding: 15px; border-left: 5px solid #2b88d8; border-radius: 5px; margin: 20px 0;'>\n\n## 📈 访问趋势分析\n\n按小时/天/周/月查看连接趋势，识别访问模式和异常波动\n\n</div>"
+            },
+            "name": "text - trends header",
+            "id": "b05f3788-cd51-43e1-83ff-24fc87d6a596"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 20px; border-left: 5px solid #f57c00; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 8px rgba(245,124,0,0.1);'>\n\n## 🏢 部门 AVD 使用分析\n\n从多个维度深入分析各部门的 AVD 使用情况，包括使用量、设备合规性、安全风险等\n\n</div>"
+            },
+            "name": "text - department header",
+            "id": "dept-header-001"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门使用概览\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| summarize \n    TotalConnections = count(),\n    UniqueUsers = dcount(UserPrincipalName),\n    AvgConnectionsPerUser = round(count() * 1.0 / dcount(UserPrincipalName), 2),\n    LastAccessTime = max(TimeGenerated)\n    by Department\n| order by TotalConnections desc",
+                "size": 0,
+                "title": "📊 部门 AVD 使用总览",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "TotalConnections",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "blue"
+                            }
+                        },
+                        {
+                            "columnMatch": "UniqueUsers",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "green"
+                            }
+                        }
+                    ]
+                }
+            },
+            "name": "query - department overview",
+            "id": "dept-query-001"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门连接数分布\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| summarize ConnectionCount = count() by Department\n| order by ConnectionCount desc",
+                "size": 0,
+                "title": "部门连接数占比",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "query - department distribution",
+            "id": "dept-query-002"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门用户数趋势\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| summarize UniqueUsers = dcount(UserPrincipalName) by Department, bin(TimeGenerated, 1d)\n| order by TimeGenerated asc",
+                "size": 0,
+                "title": "部门活跃用户数趋势",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "linechart"
+            },
+            "customWidth": "50",
+            "name": "query - department user trend",
+            "id": "dept-query-003"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门设备合规性分析\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| extend \n    IsCompliant = tobool(DeviceDetail.isCompliant),\n    IsManaged = tobool(DeviceDetail.isManaged)\n| extend ComplianceStatus = case(\n    IsManaged == true and IsCompliant == true, \"合规\",\n    IsManaged == true and IsCompliant != true, \"不合规\",\n    IsManaged == true, \"已管理\",\n    \"未管理\"\n)\n| summarize \n    TotalDevices = count(),\n    CompliantDevices = countif(ComplianceStatus == \"合规\"),\n    NonCompliantDevices = countif(ComplianceStatus == \"不合规\"),\n    UnmanagedDevices = countif(ComplianceStatus == \"未管理\")\n    by Department\n| extend ComplianceRate = round(CompliantDevices * 100.0 / TotalDevices, 2)\n| order by ComplianceRate asc",
+                "size": 0,
+                "title": "🔐 部门设备合规性分析",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "ComplianceRate",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "greenRed",
+                                "aggregation": "Average"
+                            }
+                        },
+                        {
+                            "columnMatch": "NonCompliantDevices",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "red"
+                            }
+                        },
+                        {
+                            "columnMatch": "UnmanagedDevices",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "orange"
+                            }
+                        }
+                    ]
+                }
+            },
+            "name": "query - department compliance",
+            "id": "dept-query-004"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门安全风险评分\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\n// 失败登录\nlet FailedLogins = SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType != 0\n| extend Department = GetDepartment(UserPrincipalName)\n| summarize FailedCount = count() by Department;\n// 周末访问\nlet WeekendAccess = SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend DayOfWeek = dayofweek(TimeGenerated)\n| where DayOfWeek == 0d or DayOfWeek == 6d\n| extend Department = GetDepartment(UserPrincipalName)\n| summarize WeekendCount = count() by Department;\n// 非合规设备\nlet NonCompliantDevices = SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| where tobool(DeviceDetail.isCompliant) != true\n| extend Department = GetDepartment(UserPrincipalName)\n| summarize NonCompliantCount = count() by Department;\n// 合并数据计算风险评分\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| summarize TotalConnections = count() by Department\n| join kind=leftouter (FailedLogins) on Department\n| join kind=leftouter (WeekendAccess) on Department\n| join kind=leftouter (NonCompliantDevices) on Department\n| extend \n    FailedCount = iff(isempty(FailedCount), 0, FailedCount),\n    WeekendCount = iff(isempty(WeekendCount), 0, WeekendCount),\n    NonCompliantCount = iff(isempty(NonCompliantCount), 0, NonCompliantCount)\n| extend RiskScore = round(\n    (FailedCount * 1.0 / TotalConnections * 100 * 3) + \n    (WeekendCount * 1.0 / TotalConnections * 100 * 1) + \n    (NonCompliantCount * 1.0 / TotalConnections * 100 * 2), 2)\n| project Department, TotalConnections, FailedCount, WeekendCount, NonCompliantCount, RiskScore\n| order by RiskScore desc",
+                "size": 0,
+                "title": "⚠️ 部门安全风险评分",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "RiskScore",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "redGreen",
+                                "aggregation": "Average"
+                            }
+                        },
+                        {
+                            "columnMatch": "FailedCount",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "red"
+                            }
+                        }
+                    ]
+                }
+            },
+            "name": "query - department risk score",
+            "id": "dept-query-005"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门使用的操作系统分布\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| extend RawOS = tostring(DeviceDetail.operatingSystem)\n| extend ClientOS = case(\n    RawOS contains \"Windows\", \"Windows\",\n    RawOS contains \"Mac\", \"macOS\",\n    RawOS contains \"iOS\", \"iOS\",\n    RawOS contains \"Android\", \"Android\",\n    RawOS contains \"Linux\", \"Linux\",\n    \"Other\"\n)\n| summarize ConnectionCount = count() by Department, ClientOS\n| order by Department asc, ConnectionCount desc",
+                "size": 0,
+                "title": "💻 部门使用的客户端操作系统分布",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "barchart",
+                "chartSettings": {
+                    "xAxis": "Department",
+                    "yAxis": [
+                        "ConnectionCount"
+                    ],
+                    "group": "ClientOS",
+                    "createOtherGroup": 10
+                }
+            },
+            "customWidth": "50",
+            "name": "query - department os",
+            "id": "dept-query-006"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门访问时段分布\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| extend Hour = hourofday(TimeGenerated)\n| extend TimeSlot = case(\n    Hour >= 0 and Hour < 6, \"00:00-06:00 (深夜)\",\n    Hour >= 6 and Hour < 9, \"06:00-09:00 (早晨)\",\n    Hour >= 9 and Hour < 12, \"09:00-12:00 (上午)\",\n    Hour >= 12 and Hour < 14, \"12:00-14:00 (午休)\",\n    Hour >= 14 and Hour < 18, \"14:00-18:00 (下午)\",\n    Hour >= 18 and Hour < 22, \"18:00-22:00 (傍晚)\",\n    \"22:00-00:00 (夜间)\"\n)\n| summarize ConnectionCount = count() by Department, TimeSlot\n| order by Department asc",
+                "size": 0,
+                "title": "🕐 部门访问时段分布",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "barchart",
+                "chartSettings": {
+                    "xAxis": "Department",
+                    "yAxis": [
+                        "ConnectionCount"
+                    ],
+                    "group": "TimeSlot"
+                }
+            },
+            "customWidth": "50",
+            "name": "query - department time distribution",
+            "id": "dept-query-007"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门设备管理状态（基于 SigninLogs 中的设备信息）\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| extend \n    IsCompliant = tobool(DeviceDetail.isCompliant),\n    IsManaged = tobool(DeviceDetail.isManaged),\n    OS = tostring(DeviceDetail.operatingSystem)\n| summarize \n    TotalConnections = count(),\n    CompliantConnections = countif(IsCompliant == true),\n    NonCompliantConnections = countif(IsCompliant == false),\n    UnknownCompliance = countif(isnull(IsCompliant)),\n    ManagedConnections = countif(IsManaged == true),\n    UnmanagedConnections = countif(IsManaged == false or isnull(IsManaged)),\n    WindowsConnections = countif(OS contains \"Windows\"),\n    MacConnections = countif(OS contains \"Mac\"),\n    MobileConnections = countif(OS contains \"iOS\" or OS contains \"Android\")\n    by Department\n| extend \n    ComplianceRate = round(CompliantConnections * 100.0 / TotalConnections, 2),\n    ManagedRate = round(ManagedConnections * 100.0 / TotalConnections, 2)\n| order by TotalConnections desc",
+                "size": 0,
+                "title": "📱 部门设备管理状态",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "ComplianceRate",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "greenRed"
+                            }
+                        },
+                        {
+                            "columnMatch": "ManagedRate",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "blue"
+                            }
+                        }
+                    ]
+                }
+            },
+            "name": "query - department intune devices",
+            "id": "dept-query-008"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门地理位置分布\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| where isnotempty(Location)\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| summarize \n    ConnectionCount = count(),\n    UniqueUsers = dcount(UserPrincipalName),\n    Departments = make_set(Department)\n    by Location\n| order by ConnectionCount desc\n| take 20",
+                "size": 0,
+                "title": "🌍 部门用户地理位置分布",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "map",
+                "mapSettings": {
+                    "locInfo": "CountryRegion",
+                    "locInfoColumn": "Location",
+                    "sizeSettings": "ConnectionCount",
+                    "sizeAggregation": "Sum",
+                    "legendMetric": "ConnectionCount",
+                    "legendAggregation": "Sum",
+                    "itemColorSettings": {
+                        "nodeColorField": "ConnectionCount",
+                        "colorAggregation": "Sum",
+                        "type": "heatmap",
+                        "heatmapPalette": "greenRed"
+                    }
+                }
+            },
+            "name": "query - department locations",
+            "id": "dept-query-009"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门应用使用模式（如果没有 IntuneAuditLogs 则跳过此查询）\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| summarize \n    UniqueApps = dcount(AppDisplayName),\n    TotalSessions = count(),\n    UniqueUsers = dcount(UserPrincipalName)\n    by Department\n| order by TotalSessions desc",
+                "size": 0,
+                "title": "📲 部门应用管理活动 (Intune)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table"
+            },
+            "customWidth": "50",
+            "name": "query - department app usage",
+            "id": "dept-query-010"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 部门平均连接成功率\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| extend Department = GetDepartment(UserPrincipalName)\n| where \"*\" in ({Department}) or Department in ({Department})\n| summarize \n    TotalAttempts = count(),\n    SuccessfulConnections = countif(ResultType == 0),\n    FailedConnections = countif(ResultType != 0)\n    by Department\n| extend SuccessRate = round(SuccessfulConnections * 100.0 / TotalAttempts, 2)\n| project Department, TotalAttempts, SuccessfulConnections, FailedConnections, SuccessRate\n| order by SuccessRate asc",
+                "size": 0,
+                "title": "✅ 部门连接成功率",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "barchart",
+                "chartSettings": {
+                    "xAxis": "Department",
+                    "yAxis": [
+                        "SuccessRate"
+                    ],
+                    "seriesLabelSettings": [
+                        {
+                            "seriesName": "SuccessRate",
+                            "label": "成功率 (%)",
+                            "color": "green"
+                        }
+                    ]
+                }
+            },
+            "customWidth": "50",
+            "name": "query - department success rate",
+            "id": "dept-query-011"
+        },
+        {
+            "type": 9,
+            "content": {
+                "version": "KqlParameterItem/1.0",
+                "parameters": [
+                    {
+                        "id": "trendView",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "TrendView",
+                        "label": "查看方式",
+                        "type": 2,
+                        "isRequired": true,
+                        "value": "hourly",
+                        "typeSettings": {
+                            "additionalResourceOptions": [],
+                            "showDefault": false
+                        },
+                        "jsonData": "[{\"value\":\"hourly\",\"label\":\"按小时\",\"selected\":true},{\"value\":\"daily\",\"label\":\"按天\"},{\"value\":\"weekly\",\"label\":\"按周\"},{\"value\":\"monthly\",\"label\":\"按月\"}]"
+                    }
+                ],
+                "style": "pills"
+            },
+            "name": "trend view parameters",
+            "id": "139be9f2-2a76-43e6-b45f-d64b788c87cb"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "let viewType = \"{TrendView}\";\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| summarize \n    Connections = count(),\n    UniqueUsers = dcount(UserPrincipalName),\n    SuccessfulConnections = countif(ResultType == 0),\n    FailedConnections = countif(ResultType != 0)\n    by TimeGenerated = case(\n        viewType == \"hourly\", bin(TimeGenerated, 1h),\n        viewType == \"daily\", bin(TimeGenerated, 1d),\n        viewType == \"weekly\", startofweek(TimeGenerated),\n        viewType == \"monthly\", startofmonth(TimeGenerated),\n        bin(TimeGenerated, 1d)\n    )\n| order by TimeGenerated asc",
+                "size": 0,
+                "title": "访问趋势 - 总览（连接次数 & 用户数）",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "timechart",
+                "chartSettings": {
+                    "showLegend": true,
+                    "seriesLabelSettings": [
+                        {
+                            "seriesName": "Connections",
+                            "label": "连接次数",
+                            "color": "blue"
+                        },
+                        {
+                            "seriesName": "UniqueUsers",
+                            "label": "独立用户数",
+                            "color": "green"
+                        },
+                        {
+                            "seriesName": "SuccessfulConnections",
+                            "label": "成功连接",
+                            "color": "greenDark"
+                        },
+                        {
+                            "seriesName": "FailedConnections",
+                            "label": "失败连接",
+                            "color": "redBright"
+                        }
+                    ],
+                    "ySettings": {
+                        "numberFormatSettings": {
+                            "unit": 0,
+                            "options": {
+                                "style": "decimal",
+                                "useGrouping": true
+                            }
+                        }
+                    }
+                }
+            },
+            "name": "query - connections trend",
+            "id": "ec8c215b-95b9-46ea-8aa7-ac35d13fdf96"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "let viewType = \"{TrendView}\";\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| summarize \n    SuccessfulConnections = countif(ResultType == 0),\n    FailedConnections = countif(ResultType != 0),\n    TotalConnections = count()\n    by TimeGenerated = case(\n        viewType == \"hourly\", bin(TimeGenerated, 1h),\n        viewType == \"daily\", bin(TimeGenerated, 1d),\n        viewType == \"weekly\", startofweek(TimeGenerated),\n        viewType == \"monthly\", startofmonth(TimeGenerated),\n        bin(TimeGenerated, 1d)\n    )\n| extend SuccessRate = round(SuccessfulConnections * 100.0 / TotalConnections, 2)\n| project TimeGenerated, SuccessfulConnections, FailedConnections, SuccessRate\n| order by TimeGenerated asc",
+                "size": 0,
+                "title": "连接成功率趋势",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "linechart",
+                "chartSettings": {
+                    "showLegend": true,
+                    "yAxis": [
+                        "SuccessfulConnections",
+                        "FailedConnections"
+                    ],
+                    "seriesLabelSettings": [
+                        {
+                            "seriesName": "SuccessfulConnections",
+                            "label": "成功连接",
+                            "color": "green"
+                        },
+                        {
+                            "seriesName": "FailedConnections",
+                            "label": "失败连接",
+                            "color": "red"
+                        },
+                        {
+                            "seriesName": "SuccessRate",
+                            "label": "成功率 (%)",
+                            "color": "blue"
+                        }
+                    ]
+                }
+            },
+            "customWidth": "50",
+            "name": "query - success rate trend",
+            "id": "62c9032a-6cd2-4210-8368-8c5acb0b9da1"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "let viewType = \"{TrendView}\";\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| summarize \n    UniqueUsers = dcount(UserPrincipalName)\n    by TimeGenerated = case(\n        viewType == \"hourly\", bin(TimeGenerated, 1h),\n        viewType == \"daily\", bin(TimeGenerated, 1d),\n        viewType == \"weekly\", startofweek(TimeGenerated),\n        viewType == \"monthly\", startofmonth(TimeGenerated),\n        bin(TimeGenerated, 1d)\n    )\n| order by TimeGenerated asc",
+                "size": 0,
+                "title": "独立用户数趋势",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "areachart",
+                "chartSettings": {
+                    "showLegend": true,
+                    "seriesLabelSettings": [
+                        {
+                            "seriesName": "UniqueUsers",
+                            "label": "独立用户数",
+                            "color": "purple"
+                        }
+                    ],
+                    "ySettings": {
+                        "numberFormatSettings": {
+                            "unit": 0,
+                            "options": {
+                                "style": "decimal",
+                                "useGrouping": true
+                            }
+                        },
+                        "min": 0
+                    }
+                }
+            },
+            "customWidth": "50",
+            "name": "query - unique users trend",
+            "id": "b258056b-08b4-4edd-9121-b652ba045a67"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background-color: #fff4e6; padding: 15px; border-left: 5px solid #ff8c00; border-radius: 5px; margin: 20px 0;'>\n\n## 📊 访问分布分析\n\n分析用户访问的时间分布，识别高峰时段和工作模式\n\n</div>"
+            },
+            "name": "text - distribution header",
+            "id": "9b41475b-3cb0-40cf-ae39-cadf2e3e5e1f"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Hour = hourofday(TimeGenerated)\n| summarize \n    Connections = count(),\n    UniqueUsers = dcount(UserPrincipalName)\n    by Hour\n| union (\n    range Hour from 0 to 23 step 1\n    | extend Connections = 0, UniqueUsers = 0\n)\n| summarize \n    Connections = sum(Connections),\n    UniqueUsers = sum(UniqueUsers)\n    by Hour\n| order by Hour asc",
+                "size": 0,
+                "title": "24小时分布 - 高峰时段分析",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "barchart",
+                "chartSettings": {
+                    "xAxis": "Hour",
+                    "yAxis": [
+                        "Connections",
+                        "UniqueUsers"
+                    ],
+                    "seriesLabelSettings": [
+                        {
+                            "seriesName": "Connections",
+                            "label": "连接次数",
+                            "color": "orange"
+                        },
+                        {
+                            "seriesName": "UniqueUsers",
+                            "label": "独立用户数",
+                            "color": "blue"
+                        }
+                    ],
+                    "ySettings": {
+                        "numberFormatSettings": {
+                            "unit": 0,
+                            "options": {
+                                "style": "decimal"
+                            }
+                        },
+                        "min": 0
+                    }
+                }
+            },
+            "customWidth": "50",
+            "name": "query - hourly distribution",
+            "id": "a74f4fbd-3d23-4eba-9621-013c0fe8943f"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend DayOfWeek = dayofweek(TimeGenerated)\n| extend WeekDay = case(\n    DayOfWeek == 0d, \"周日\",\n    DayOfWeek == 1d, \"周一\",\n    DayOfWeek == 2d, \"周二\",\n    DayOfWeek == 3d, \"周三\",\n    DayOfWeek == 4d, \"周四\",\n    DayOfWeek == 5d, \"周五\",\n    DayOfWeek == 6d, \"周六\",\n    \"未知\"\n)\n| summarize Connections = count() by WeekDay, DayOfWeek\n| order by DayOfWeek asc\n| project WeekDay, Connections",
+                "size": 0,
+                "title": "工作日分布",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "query - weekday distribution",
+            "id": "d5ac7894-450f-4595-bf3c-89ccfc4fffd3"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background: linear-gradient(135deg, #ffe6e6 0%, #ffd4d4 100%); padding: 20px; border-left: 5px solid #d13438; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 8px rgba(209,52,56,0.1);'>\n\n## 🔒 安全风险与异常行为监控\n\n⚠️ 实时监控安全告警、异常登录、非工作时段访问和潜在威胁\n\n</div>"
+            },
+            "name": "text - security header",
+            "id": "7cf6132a-deeb-4463-8132-c44099f28a84"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SecurityAlert\n| where ProviderName contains \"AVD\" or ProviderName contains \"Virtual Desktop\" or AlertName contains \"Remote Desktop\"\n| summarize AlertCount = count() by bin(TimeGenerated, 1d), AlertSeverity\n| order by TimeGenerated asc",
+                "size": 0,
+                "title": "安全告警趋势 (按严重程度)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "barchart",
+                "chartSettings": {
+                    "seriesLabelSettings": [
+                        {
+                            "seriesName": "High",
+                            "color": "redBright"
+                        },
+                        {
+                            "seriesName": "Medium",
+                            "color": "orange"
+                        },
+                        {
+                            "seriesName": "Low",
+                            "color": "yellow"
+                        }
+                    ]
+                }
+            },
+            "customWidth": "60",
+            "name": "query - security alerts trend",
+            "id": "b8d53f3f-a74c-4bf1-894c-0ad349f582bb"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SecurityAlert\n| where ProviderName contains \"AVD\" or ProviderName contains \"Virtual Desktop\" or AlertName contains \"Remote Desktop\"\n| summarize AlertCount = count() by AlertSeverity\n| order by AlertCount desc",
+                "size": 0,
+                "title": "告警严重程度分布",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "piechart",
+                "chartSettings": {
+                    "seriesLabelSettings": [
+                        {
+                            "seriesName": "High",
+                            "color": "redBright"
+                        },
+                        {
+                            "seriesName": "Medium",
+                            "color": "orange"
+                        },
+                        {
+                            "seriesName": "Low",
+                            "color": "yellow"
+                        }
+                    ]
+                }
+            },
+            "customWidth": "40",
+            "name": "query - alert severity distribution",
+            "id": "4b1ae21c-fe21-4297-a1c1-9f6314d83709"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SecurityAlert\n| where ProviderName contains \"AVD\" or ProviderName contains \"Virtual Desktop\" or AlertName contains \"Remote Desktop\"\n| summarize \n    AlertCount = count(),\n    LastAlertTime = max(TimeGenerated),\n    Severity = max(AlertSeverity)\n    by AlertName\n| order by AlertCount desc\n| take 10",
+                "size": 0,
+                "title": "Top 10 安全告警类型",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "告警次数",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "red"
+                            }
+                        },
+                        {
+                            "columnMatch": "严重程度",
+                            "formatter": 18,
+                            "formatOptions": {
+                                "thresholdsOptions": "colors",
+                                "thresholdsGrid": [
+                                    {
+                                        "operator": "==",
+                                        "thresholdValue": "High",
+                                        "representation": "redBright",
+                                        "text": "{0}{1}"
+                                    },
+                                    {
+                                        "operator": "==",
+                                        "thresholdValue": "Medium",
+                                        "representation": "orange",
+                                        "text": "{0}{1}"
+                                    },
+                                    {
+                                        "operator": "Default",
+                                        "thresholdValue": null,
+                                        "representation": "yellow",
+                                        "text": "{0}{1}"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            "name": "query - top alerts",
+            "id": "a8a4e089-5ae8-4d63-a4ce-d5f60fe8bfe9"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 非工作日访问记录（含部门信息）\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| extend DayOfWeek = dayofweek(TimeGenerated)\n| where DayOfWeek == 0d or DayOfWeek == 6d\n| extend WeekendDay = case(\n    DayOfWeek == 0d, \"周日\",\n    DayOfWeek == 6d, \"周六\",\n    \"\"\n)\n| summarize \n    AccessCount = count(),\n    LastAccess = max(TimeGenerated),\n    Locations = make_set(Location)\n    by UserPrincipalName, Department, WeekendDay\n| order by AccessCount desc\n| take 20",
+                "size": 0,
+                "title": "⚠️ 非工作日访问记录 (周末登录)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "AccessCount",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "orange"
+                            }
+                        }
+                    ]
+                }
+            },
+            "customWidth": "50",
+            "name": "query - weekend access",
+            "id": "6b9668fb-1e50-4496-a69d-4b70cca9cf76"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 非工作时间访问（含部门信息）\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| extend LocationStr = tostring(Location)\n| extend TimezoneOffset = case(\n    LocationStr contains \"China\" or LocationStr contains \"Beijing\" or LocationStr contains \"Shanghai\", 8.0,\n    LocationStr contains \"Singapore\" or LocationStr contains \"Hong Kong\" or LocationStr contains \"Malaysia\", 8.0,\n    LocationStr contains \"Japan\" or LocationStr contains \"Tokyo\", 9.0,\n    LocationStr contains \"Korea\" or LocationStr contains \"Seoul\", 9.0,\n    LocationStr contains \"India\" or LocationStr contains \"Mumbai\" or LocationStr contains \"Delhi\", 5.5,\n    LocationStr contains \"Dubai\" or LocationStr contains \"UAE\", 4.0,\n    LocationStr contains \"United Kingdom\" or LocationStr contains \"London\", 0.0,\n    LocationStr contains \"Germany\" or LocationStr contains \"France\" or LocationStr contains \"Netherlands\" or LocationStr contains \"Belgium\", 1.0,\n    LocationStr contains \"United States\" or LocationStr contains \"America\", -5.0,\n    LocationStr contains \"California\" or LocationStr contains \"Los Angeles\" or LocationStr contains \"San Francisco\", -8.0,\n    LocationStr contains \"Australia\" or LocationStr contains \"Sydney\", 10.0,\n    8.0\n)\n| extend LocalTime = TimeGenerated + (TimezoneOffset * 1h)\n| extend LocalHour = hourofday(LocalTime)\n| where LocalHour < 6 or LocalHour >= 22\n| summarize \n    AccessCount = count(),\n    LatestUTC = max(TimeGenerated),\n    LatestLocal = max(LocalTime),\n    LocationName = take_any(LocationStr)\n    by UserPrincipalName, Department, IPAddress\n| project UserPrincipalName, Department, IPAddress, AccessCount, LatestUTC, LatestLocal, LocationName\n| order by AccessCount desc\n| take 20",
+                "size": 0,
+                "title": "🌙 非工作时间访问 (基于用户本地时间 22:00-06:00)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "访问次数",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "purple"
+                            }
+                        },
+                        {
+                            "columnMatch": "访问时段",
+                            "formatter": 0,
+                            "formatOptions": {
+                                "customColumnWidthSetting": "25ch"
+                            }
+                        }
+                    ]
+                }
+            },
+            "customWidth": "50",
+            "name": "query - off hours access",
+            "id": "7a69795d-83a1-47f6-b285-31fc1e0d11ca"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 失败的登录尝试（含部门信息）\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType != 0\n| extend Department = GetDepartment(UserPrincipalName)\n| summarize \n    FailureCount = count(),\n    LastFailureTime = max(TimeGenerated)\n    by UserPrincipalName, Department, ResultDescription, IPAddress\n| order by FailureCount desc\n| take 20",
+                "size": 0,
+                "title": "失败的登录尝试 (潜在风险)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "失败次数",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "red"
+                            }
+                        },
+                        {
+                            "columnMatch": "IPAddress",
+                            "formatter": 0,
+                            "formatOptions": {
+                                "customColumnWidthSetting": "20ch"
+                            }
+                        }
+                    ]
+                }
+            },
+            "name": "query - failed logins",
+            "id": "ae5352d0-5e15-4f30-b7b6-71765ad8886c"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background: linear-gradient(135deg, #e8f5e9 0%, #d4edd6 100%); padding: 20px; border-left: 5px solid #107c10; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 8px rgba(16,124,16,0.1);'>\n\n## 👥 用户行为与活动分析\n\n深入了解用户访问模式、地理分布、设备偏好和异常行为\n\n</div>"
+            },
+            "name": "text - user activity header",
+            "id": "dafcad82-34ea-4c92-a580-45bb09265c20"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// Top 20 活跃用户（含部门信息）\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| summarize \n    ConnectionCount = count(),\n    LastConnectionTime = max(TimeGenerated)\n    by UserPrincipalName, Department\n| order by ConnectionCount desc\n| take 20",
+                "size": 0,
+                "title": "Top 20 活跃用户",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "连接次数",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "blue"
+                            }
+                        },
+                        {
+                            "columnMatch": "平均会话时长",
+                            "formatter": 0,
+                            "numberFormat": {
+                                "unit": 24,
+                                "options": {
+                                    "style": "decimal",
+                                    "useGrouping": false
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "customWidth": "50",
+            "name": "query - top users",
+            "id": "18dee9f4-49af-4bb2-b114-ea7f86ffabc7"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend RawOS = tostring(DeviceDetail.operatingSystem)\n| extend ClientOS = case(\n    RawOS contains \"Windows\", \"Windows\",\n    RawOS contains \"Mac\", \"macOS\",\n    RawOS contains \"iOS\", \"iOS\",\n    RawOS contains \"Android\", \"Android\",\n    RawOS contains \"Chrome\", \"ChromeOS\",\n    RawOS contains \"Linux\", \"Linux\",\n    isnotempty(RawOS), RawOS,\n    \"Unknown\"\n)\n| where ClientOS != \"Unknown\"\n| summarize UserCount = dcount(UserPrincipalName), ConnectionCount = count() by ClientOS\n| order by ConnectionCount desc",
+                "size": 0,
+                "title": "客户端操作系统分布",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "piechart"
+            },
+            "customWidth": "50",
+            "name": "query - client os",
+            "id": "8ef9cc47-0126-48b2-ab9f-d4024c2b4de7"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 多地点登录用户（含部门信息）\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| summarize \n    Locations = dcount(Location),\n    Cities = make_set(Location),\n    TotalLogins = count()\n    by UserPrincipalName, Department\n| where Locations >= 3\n| order by Locations desc\n| take 15",
+                "size": 0,
+                "title": "🌍 多地点登录用户 (位置变化频繁)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "Locations",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "blue"
+                            }
+                        }
+                    ]
+                }
+            },
+            "customWidth": "50",
+            "name": "query - multi location users",
+            "id": "f32c8429-6d17-49c5-8c95-611e954e9fd5"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where isnotempty(Location)\n| summarize SigninCount = count(), UniqueUsers = dcount(UserPrincipalName) by Location\n| order by SigninCount desc\n| take 15",
+                "size": 0,
+                "title": "用户地理位置分布 (Top 15)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "map",
+                "mapSettings": {
+                    "locInfo": "CountryRegion",
+                    "locInfoColumn": "Location",
+                    "sizeSettings": "SigninCount",
+                    "sizeAggregation": "Sum",
+                    "legendMetric": "SigninCount",
+                    "legendAggregation": "Sum",
+                    "itemColorSettings": {
+                        "nodeColorField": "SigninCount",
+                        "colorAggregation": "Sum",
+                        "type": "heatmap",
+                        "heatmapPalette": "greenRed"
+                    }
+                }
+            },
+            "name": "query - user locations",
+            "id": "99a72481-2ae8-4fcb-a12c-f6d1ee387fb7"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background-color: #f3e5f5; padding: 15px; border-left: 5px solid #8e44ad; border-radius: 5px; margin: 20px 0;'>\n\n## 💻 访问设备分类\n\n区分**公司管理设备**（Intune 管理）和 **BYOD 设备**（个人设备），监控设备安全状态。\n\n</div>"
+            },
+            "name": "text - device header",
+            "id": "2a2baace-899d-46f7-8f37-1a69b0a49694"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Browser = tostring(DeviceDetail.browser)\n| where isnotempty(Browser)\n| summarize \n    ConnectionCount = count(),\n    UniqueUsers = dcount(UserPrincipalName)\n    by Browser\n| order by ConnectionCount desc\n| take 10",
+                "size": 0,
+                "title": "浏览器使用统计 (Top 10)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "连接次数",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "blue"
+                            }
+                        }
+                    ]
+                }
+            },
+            "customWidth": "50",
+            "name": "query - browsers",
+            "id": "180d9e8f-1320-49bb-808d-1162b8630644"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 区分公司管理设备（Intune）和 BYOD 设备\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend \n    IsCompliant = tobool(DeviceDetail.isCompliant),\n    IsManaged = tobool(DeviceDetail.isManaged),\n    TrustType = tostring(DeviceDetail.trustType)\n| extend DeviceCategory = case(\n    IsManaged == true and IsCompliant == true, \"🟢 公司管理设备（合规）\",\n    IsManaged == true and IsCompliant != true, \"🟡 公司管理设备（不合规）\",\n    IsManaged == true, \"🟢 公司管理设备\",\n    IsCompliant == true, \"🟠 BYOD 设备（合规）\",\n    IsCompliant == false, \"🔴 BYOD 设备（不合规）\",\n    \"⚪ BYOD 设备（未知）\"\n)\n| summarize \n    ConnectionCount = count(), \n    UserCount = dcount(UserPrincipalName)\n    by DeviceCategory\n| order by ConnectionCount desc",
+                "size": 0,
+                "title": "设备分类：公司管理 vs BYOD",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "piechart",
+                "chartSettings": {
+                    "seriesLabelSettings": [
+                        {
+                            "seriesName": "🟢 公司管理设备（合规）",
+                            "color": "green"
+                        },
+                        {
+                            "seriesName": "🟡 公司管理设备（不合规）",
+                            "color": "yellow"
+                        },
+                        {
+                            "seriesName": "🟢 公司管理设备",
+                            "color": "greenDark"
+                        },
+                        {
+                            "seriesName": "🟠 BYOD 设备（合规）",
+                            "color": "orange"
+                        },
+                        {
+                            "seriesName": "🔴 BYOD 设备（不合规）",
+                            "color": "red"
+                        },
+                        {
+                            "seriesName": "⚪ BYOD 设备（未知）",
+                            "color": "gray"
+                        }
+                    ]
+                }
+            },
+            "customWidth": "50",
+            "name": "query - device compliance",
+            "id": "677cae9a-45e5-40ca-86db-5b17e4c0b90f"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background-color: #fff3cd; padding: 15px; border-left: 5px solid #ff6b35; border-radius: 5px; margin: 20px 0;'>\n\n## 🔍 异常检测\n\n🎯 基于统计分析识别异常行为和可疑活动\n\n</div>"
+            },
+            "name": "text - anomaly header",
+            "id": "239fb2de-83d9-447a-8707-835017bb9060"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "// 异常活跃用户（含部门信息）\nlet GetDepartment = (upn: string) {\n    let emailPrefix = tostring(split(upn, \"@\")[0]);\n    case(\n        emailPrefix contains \"hr\" or emailPrefix contains \"人力\", \"人力资源部\",\n        emailPrefix contains \"it\" or emailPrefix contains \"tech\", \"IT部\",\n        emailPrefix contains \"sales\" or emailPrefix contains \"销售\", \"销售部\",\n        emailPrefix contains \"finance\" or emailPrefix contains \"财务\", \"财务部\",\n        emailPrefix contains \"marketing\" or emailPrefix contains \"市场\", \"市场部\",\n        emailPrefix contains \"ops\" or emailPrefix contains \"运营\", \"运营部\",\n        \"其他部门\"\n    )\n};\nSigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where ResultType == 0\n| extend Department = GetDepartment(UserPrincipalName)\n| summarize DailyConnections = count() by UserPrincipalName, Department, bin(TimeGenerated, 1d)\n| summarize \n    TotalConnections = sum(DailyConnections),\n    AvgDailyConnections = avg(DailyConnections),\n    MaxDailyConnections = max(DailyConnections),\n    StdDev = stdev(DailyConnections)\n    by UserPrincipalName, Department\n| extend AnomalyScore = round((MaxDailyConnections - AvgDailyConnections) / StdDev, 2)\n| where AnomalyScore >= 2\n| project UserPrincipalName, Department, TotalConnections, AvgDailyConnections = round(AvgDailyConnections, 2), MaxDailyConnections, AnomalyScore\n| order by AnomalyScore desc\n| take 10",
+                "size": 0,
+                "title": "异常活跃用户 (基于统计分析)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "异常程度",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "red"
+                            }
+                        }
+                    ]
+                }
+            },
+            "customWidth": "60",
+            "name": "query - anomaly users",
+            "id": "2711fdcf-03ad-4063-be71-e162cee0ff9a"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "SigninLogs\n| where AppDisplayName in (\"Azure Virtual Desktop Client\", \"Windows Virtual Desktop Client\")\n| where isnotempty(IPAddress)\n| summarize \n    LoginCount = count(),\n    Users = make_set(UserPrincipalName),\n    UniqueUsers = dcount(UserPrincipalName)\n    by IPAddress\n| where UniqueUsers >= 3\n| order by UniqueUsers desc\n| take 10\n| project IPAddress, UniqueUsers, LoginCount",
+                "size": 0,
+                "title": "可疑 IP 地址 (多用户共享)",
+                "timeContext": {
+                    "durationMs": 0
+                },
+                "timeContextFromParameter": "TimeRange",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces",
+                "crossComponentResources": [
+                    "{Workspace}"
+                ],
+                "visualization": "table",
+                "gridSettings": {
+                    "formatters": [
+                        {
+                            "columnMatch": "用户数量",
+                            "formatter": 8,
+                            "formatOptions": {
+                                "palette": "orange"
+                            }
+                        }
+                    ]
+                }
+            },
+            "customWidth": "40",
+            "name": "query - suspicious ips",
+            "id": "296989b6-1c3e-401f-bf26-1c1c16c78911"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "<div style='background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 2px solid #dee2e6; margin-top: 30px;'>\n\n### 📝 工作簿说明\n\n<div style='background-color: white; padding: 15px; border-radius: 5px; margin: 10px 0;'>\n\n#### 📊 数据源\n- **SigninLogs**: Entra ID 登录日志（主要数据源）\n  - 应用过滤: `Azure Virtual Desktop Client` / `Windows Virtual Desktop Client`\n  - 成功登录: `ResultType == 0` | 失败登录: `ResultType != 0`\n  - 包含设备信息：操作系统、浏览器、合规状态、管理状态\n- **SecurityAlert**: 安全告警（辅助数据源）\n\n**📝 部门识别：** 通过邮箱前缀关键字识别（如：hr→人力资源部，it→IT部，sales→销售部）\n\n</div>\n\n<div style='background-color: white; padding: 15px; border-radius: 5px; margin: 10px 0;'>\n\n#### 🔑 关键字段\n- `UserPrincipalName`: 用户主体名称\n- `Department`: 部门（从邮箱前缀推断）\n- `IPAddress`: 登录源 IP\n- `Location`: 地理位置\n- `DeviceDetail`: 设备信息（OS、浏览器、合规状态）\n- `ResultType`: 登录结果\n\n</div>\n\n<div style='background-color: #d1ecf1; padding: 15px; border-radius: 5px; border-left: 4px solid #0c5460; margin: 10px 0;'>\n\n#### 💡 建议操作\n1. 🏢 **部门分析**：定期检查各部门的 AVD 使用情况和安全风险评分\n2. ⚠️ **安全监控**：关注高风险部门、异常活跃用户和可疑 IP 地址\n3. 🔐 **合规管理**：监控部门设备合规率，确保符合企业安全策略\n4. 📈 **趋势分析**：了解各部门访问模式、高峰时段和资源需求\n5. 💻 **设备管理**：检查设备合规状态和管理情况\n6. 🌍 **地理分布**：分析部门用户的地理位置，识别异常访问\n\n**🛡️ 设备合规性说明：** 检测用户访问 AVD 的物理终端设备（笔记本、手机等），而非 AVD 虚拟机本身。\n\n</div>\n\n<div style='background-color: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0;'>\n\n**⏱️ 数据刷新：** 建议每 1-4 小时刷新（SigninLogs 延迟 5-15 分钟）\n\n</div>\n\n<div style='background-color: #e9ecef; padding: 10px; border-radius: 5px; margin: 20px 0 0 0; text-align: center; border-top: 2px solid #dee2e6;'>\n\n© 2025 Jason Liang. All Rights Reserved. | 版本: 2.0 (增强部门分析)\n\n</div>\n\n</div>"
+            },
+            "name": "text - footer",
+            "id": "6f12caea-5379-466c-8c9e-759217e0a683"
+        }
+    ],
+    "fallbackResourceIds": [
+        "/subscriptions/39c4d6ba-bd22-45fa-abbc-bd025e035ae5/resourcegroups/sentinel/providers/microsoft.operationalinsights/workspaces/sentinel"
+    ],
+    "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
+    "context": {
+        "ownerId": "/subscriptions/39c4d6ba-bd22-45fa-abbc-bd025e035ae5/resourcegroups/sentinel/providers/microsoft.operationalinsights/workspaces/sentinel"
+    }
+}
